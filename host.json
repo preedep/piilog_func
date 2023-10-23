@@ -14,8 +14,8 @@
   },
   "customHandler": {
     "description": {
-      "defaultExecutablePath": "piilog_func",
-      "workingDirectory": "",
+      "defaultExecutablePath": "./target/debug/piilog_func",
+      "workingDirectory": ".",
       "arguments": []
     },
     "enableForwardingHttpRequest": true
