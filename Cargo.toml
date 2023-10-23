@@ -1,0 +1,18 @@
+[package]
+name = "piilog_func"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "4"
+azure_core = "0.16"
+azure_identity = "0.16"
+azure_storage_blobs = "0.16"
+logs = "0.7"
+pretty_env_logger = "0.5"
+rdkafka = "0.34"
+serde = "1.0"
+serde_json = "1.0"
+
