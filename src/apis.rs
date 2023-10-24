@@ -1,13 +1,15 @@
 use std::fmt::Display;
+use std::time::Duration;
 
 use actix_web::{HttpRequest, web};
 use azure_security_keyvault::prelude::KeyVaultGetSecretResponse;
-use kafka::client::{KafkaClient, SecurityConfig};
+use kafka::client::{KafkaClient, ProduceMessage, RequiredAcks, SecurityConfig};
 use logs::debug;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use openssl::x509::X509;
 
-use crate::models::{PiiLogFuncConfiguration, PiiLogFuncResult, PiiLogRequest, PiiLogResponse};
+
+use crate::models::{PiiLogFuncConfiguration, PiiLogFuncError, PiiLogFuncResult, PiiLogRequest, PiiLogResponse};
 
 pub async fn post_piilog_func(
     req: HttpRequest,
@@ -52,7 +54,6 @@ pub async fn post_piilog_func(
     //    let cert_bytes = general_purpose::STANDARD
     //        .decode(data_cert.value.as_str()).unwrap();
     //    debug!("{:?}", cert_bytes);
-
     let x509 = X509::from_pem(certificate_key.as_bytes()).unwrap();
     builder.set_certificate(&x509).unwrap();
     let connector = builder.build();
@@ -69,8 +70,23 @@ pub async fn post_piilog_func(
         SecurityConfig::new(connector).with_hostname_verification(true),
     );
 
+    match client.load_metadata_all() {
+        Ok(_) => {
 
-    Ok(PiiLogResponse {
-        message: "Sent Completed".to_string(),
-    })
+            let req = vec![ProduceMessage::new("piilog", 0, None, Some("a".as_bytes())),
+                           ProduceMessage::new("piilog", 0, None, Some("b".as_bytes()))];
+            let resp = client.produce_messages(RequiredAcks::One,
+                                               Duration::from_millis(100),
+                                               req);
+
+            debug!("Response from Kafka broker: {:#?}",resp);
+
+            Ok(PiiLogResponse {
+                message: "Sent Completed".to_string(),
+            })
+        }
+        Err(e) => {
+            Err(PiiLogFuncError::new(e.to_string()))
+        }
+    }
 }
