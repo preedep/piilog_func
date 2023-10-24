@@ -6,6 +6,16 @@ use actix_web::http::header::ContentType;
 use actix_web::http::StatusCode;
 use serde::{Deserialize, Serialize};
 
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PiiLogFuncConfiguration {
+    #[serde(rename = "kafka_endpoint")]
+    pub kafka_endpoint: String,
+    #[serde(rename = "key_vault_account")]
+    pub key_vault_account: String,
+    #[serde(rename = "key_vault_key_name")]
+    pub key_vault_key_name: String,
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PiiLogRequest {
     #[serde(rename = "app_id")]

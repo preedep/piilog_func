@@ -1,15 +1,15 @@
 use std::fmt::Display;
 
 use actix_web::{HttpRequest, web};
-use azure_core::auth::TokenResponse;
 use azure_security_keyvault::prelude::KeyVaultGetSecretResponse;
 use logs::{debug, error};
 
 use crate::azure_utils::get_azure_access_token;
-use crate::models::{PiiLogFuncError, PiiLogFuncResult, PiiLogRequest, PiiLogResponse};
+use crate::models::{PiiLogFuncConfiguration, PiiLogFuncError, PiiLogFuncResult, PiiLogRequest, PiiLogResponse};
 
 pub async fn post_piilog_func(req: HttpRequest,
                               data_cert: web::Data<KeyVaultGetSecretResponse>,
+                              data_config: web::Data<PiiLogFuncConfiguration>,
                               payload: web::Json<PiiLogRequest>) -> PiiLogFuncResult<PiiLogResponse> {
     debug!("Calling post_piilog_func");
     let access_token = get_azure_access_token(None).await;
