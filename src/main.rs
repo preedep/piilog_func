@@ -5,10 +5,9 @@ use actix_web::middleware::Logger;
 use actix_web::web::Data;
 use azure_core::auth::TokenCredential;
 use logs::debug;
-use tokio::sync::Mutex;
 
 use crate::apis::post_piilog_func;
-use crate::azure_utils::{get_azure_access_token, get_certificate_from_key_vault};
+use crate::azure_utils::get_certificate_from_key_vault;
 use crate::models::PiiLogFuncConfiguration;
 
 mod apis;
@@ -29,9 +28,12 @@ async fn main() -> std::io::Result<()> {
         Err(_) => 8088,
     };
 
+    //  Required system variables
     let pii_log_endpoint = env::var(PII_LOG_ENDPOINT).expect("PII_LOG_ENDPOINT Invalid");
-    let pii_log_key_vault_account = env::var(PII_LOG_KEY_VAULT_ACCOUNT).expect("PII_LOG_KEY_VAULT_ACCOUNT Invalid");
-    let pii_log_key_vault_key_name = env::var(PII_LOG_KEY_VAULT_KEY_NAME).expect("PII_LOG_KEY_VAULT_KEY_NAME Invalid");
+    let pii_log_key_vault_account =
+        env::var(PII_LOG_KEY_VAULT_ACCOUNT).expect("PII_LOG_KEY_VAULT_ACCOUNT Invalid");
+    let pii_log_key_vault_key_name =
+        env::var(PII_LOG_KEY_VAULT_KEY_NAME).expect("PII_LOG_KEY_VAULT_KEY_NAME Invalid");
 
     let config = PiiLogFuncConfiguration {
         kafka_endpoint: pii_log_endpoint.clone(),
@@ -39,17 +41,17 @@ async fn main() -> std::io::Result<()> {
         key_vault_key_name: pii_log_key_vault_key_name.clone(),
     };
     debug!("Configuring value : {:#?}", config);
-
     //
     // Get Azure Credentials
     //
-    let res_cert =
-        get_certificate_from_key_vault("nicksecretstoredev001",
-                                       "certkafkadevnick001")
-            .await;
+    let res_cert = get_certificate_from_key_vault(
+        config.key_vault_account.as_str(),
+        config.key_vault_key_name.as_str(),
+    )
+    .await;
     match res_cert {
         Ok(res_cert) => {
-            debug!("Get Key Vault Value : {:#?}",res_cert);
+            debug!("Get Key Vault Value : {:#?}", res_cert);
             let data_cert = Data::new(res_cert);
             HttpServer::new(move || {
                 App::new()
@@ -65,9 +67,9 @@ async fn main() -> std::io::Result<()> {
                             .route("/PiiLogHttpTrigger", web::post().to(post_piilog_func)),
                     )
             })
-                .bind(("0.0.0.0", port))?
-                .run()
-                .await
+            .bind(("0.0.0.0", port))?
+            .run()
+            .await
         }
         Err(e) => {
             panic!("PiiFunc error: {}", e);

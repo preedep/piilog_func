@@ -6,7 +6,6 @@ use actix_web::http::header::ContentType;
 use actix_web::http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PiiLogFuncConfiguration {
     #[serde(rename = "kafka_endpoint")]
@@ -16,6 +15,7 @@ pub struct PiiLogFuncConfiguration {
     #[serde(rename = "key_vault_key_name")]
     pub key_vault_key_name: String,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PiiLogRequest {
     #[serde(rename = "app_id")]
@@ -34,7 +34,6 @@ pub struct PiiLogFuncError {
     pub message: String,
 }
 
-
 pub type PiiLogFuncResult<T> = Result<T, PiiLogFuncError>;
 
 impl Display for PiiLogFuncError {
@@ -45,9 +44,7 @@ impl Display for PiiLogFuncError {
 
 impl PiiLogFuncError {
     pub(crate) fn new(message: String) -> Self {
-        PiiLogFuncError {
-            message,
-        }
+        PiiLogFuncError { message }
     }
 }
 
@@ -57,8 +54,7 @@ impl error::ResponseError for PiiLogFuncError {
     }
     fn error_response(&self) -> HttpResponse<BoxBody> {
         type BoxBody = PiiLogFuncError;
-        HttpResponse::build(self.status_code())
-            .json(self)
+        HttpResponse::build(self.status_code()).json(self)
     }
 }
 
