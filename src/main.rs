@@ -34,10 +34,10 @@ async fn main() -> std::io::Result<()> {
                                                "certkafkadevnick001", &r)
                     .await.expect("Get Certificate from key vault failed ");
             debug!("Get Key Vault Value : {:#?}",res_cert);
-            let data_cert = Data::new(Mutex::new(res_cert));
+            let data_cert = Data::new(res_cert);
 
             debug!("Response token from azure : {:#?}", r);
-            let data_access_token = Data::new(Mutex::new(r));
+            let data_access_token = Data::new(r);
             HttpServer::new(move || {
                 App::new()
                     .wrap(middleware::DefaultHeaders::new().add(("PIILog-X-Version", "1.0")))
