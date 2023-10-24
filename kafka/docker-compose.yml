@@ -26,7 +26,8 @@ services:
       KAFKA_SSL_KEY_PASSWORD: 'password'
       KAFKA_SSL_TRUSTSTORE_LOCATION: '/certs/kafka.server.truststore.jks'
       KAFKA_SSL_TRUSTSTORE_PASSWORD: 'password'
-      KAFKA_SECURITY_INTER_BROKER_PROTOCOL: 'SSL'
+      KAFKA_SECURITY_INTER_BROKER_PROTOCOL: SSL
+      KAFKA_SECURITY_PROTOCOL: SSL
       KAFKA_CREATE_TOPICS: "piilog:1:1"
 
     volumes:
