@@ -18,6 +18,7 @@ const AZURE_FUNCTION_PORT: &str = "FUNCTIONS_CUSTOMHANDLER_PORT";
 const PII_LOG_ENDPOINT: &str = "PII_LOG_ENDPOINT";
 const PII_LOG_KEY_VAULT_ACCOUNT: &str = "PII_LOG_KEY_VAULT_ACCOUNT";
 const PII_LOG_KEY_VAULT_KEY_NAME: &str = "PII_LOG_KEY_VAULT_KEY_NAME";
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     pretty_env_logger::init();
@@ -48,7 +49,7 @@ async fn main() -> std::io::Result<()> {
         config.key_vault_account.as_str(),
         config.key_vault_key_name.as_str(),
     )
-    .await;
+        .await;
     match res_cert {
         Ok(res_cert) => {
             debug!("Get Key Vault Value : {:#?}", res_cert);
@@ -67,9 +68,9 @@ async fn main() -> std::io::Result<()> {
                             .route("/PiiLogHttpTrigger", web::post().to(post_piilog_func)),
                     )
             })
-            .bind(("0.0.0.0", port))?
-            .run()
-            .await
+                .bind(("0.0.0.0", port))?
+                .run()
+                .await
         }
         Err(e) => {
             panic!("PiiFunc error: {}", e);

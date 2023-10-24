@@ -2,8 +2,6 @@ use std::fmt::Display;
 
 use actix_web::{HttpRequest, web};
 use azure_security_keyvault::prelude::KeyVaultGetSecretResponse;
-use base64::Engine;
-use base64::engine::general_purpose;
 use logs::debug;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use openssl::x509::X509;
@@ -73,6 +71,7 @@ pub async fn post_piilog_func(
     let x509 = X509::from_pem(certificate_key.as_bytes()).unwrap();
     builder.set_certificate(&x509).unwrap();
     let connector = builder.build();
+
 
     Ok(PiiLogResponse {
         message: "Sent Completed".to_string(),

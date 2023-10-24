@@ -34,6 +34,7 @@ pub async fn get_azure_access_token(
         }
     }
 }
+
 pub async fn get_certificate_from_key_vault(
     account_name: &str,
     key_name: &str,
