@@ -4,16 +4,15 @@ use actix_web::{App, HttpServer, middleware, web};
 use actix_web::middleware::Logger;
 use actix_web::web::Data;
 use azure_core::auth::TokenCredential;
-use azure_identity::DefaultAzureCredential;
 use logs::debug;
 use tokio::sync::Mutex;
 
 use crate::apis::post_piilog_func;
-use crate::azure_utils::get_azure_access_token;
+use crate::azure_utils::{get_azure_access_token, get_certificate_from_key_vault};
 
 mod apis;
 mod azure_utils;
-
+mod models;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -30,14 +29,22 @@ async fn main() -> std::io::Result<()> {
     let response = get_azure_access_token(None).await;
     match response {
         Ok(r) => {
-            debug!("Response token from azure : {:#?}",r);
-            let data = Data::new(Mutex::new(r));
+            let res_cert =
+                get_certificate_from_key_vault("nicksecretstoredev001",
+                                               "certkafkadevnick001", &r)
+                    .await.expect("Get Certificate from key vault failed ");
+            debug!("Get Key Vault Value : {:#?}",res_cert);
+            let data_cert = Data::new(Mutex::new(res_cert));
+
+            debug!("Response token from azure : {:#?}", r);
+            let data_access_token = Data::new(Mutex::new(r));
             HttpServer::new(move || {
                 App::new()
                     .wrap(middleware::DefaultHeaders::new().add(("PIILog-X-Version", "1.0")))
                     .wrap(Logger::default())
                     .wrap(Logger::new("%a %{User-Agent}i"))
-                    .app_data(data.clone())
+                    .app_data(data_access_token.clone())
+                    .app_data(data_cert.clone())
                     .service(
                         // prefixes all resources and routes attached to it...
                         web::scope("/api")

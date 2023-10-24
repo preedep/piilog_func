@@ -9,6 +9,7 @@ edition = "2021"
 actix-web = { version = "4.4" , features =["rustls"]}
 azure_core = { version = "0.16",default-features = false, features = ["enable_reqwest_rustls","tokio"] }
 azure_identity = { version = "0.16", default-features = false, features = ["enable_reqwest_rustls"] }
+azure_security_keyvault = "0.16"
 azure_storage_blobs = "0.16"
 logs = "0.7"
 pretty_env_logger = "0.5"
