@@ -1,15 +1,16 @@
 use std::fmt::Display;
 use std::time::Duration;
 
-use actix_web::{HttpRequest, web};
+use actix_web::{web, HttpRequest};
 use azure_security_keyvault::prelude::KeyVaultGetSecretResponse;
 use kafka::client::{KafkaClient, ProduceMessage, RequiredAcks, SecurityConfig};
 use logs::debug;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use openssl::x509::X509;
 
-
-use crate::models::{PiiLogFuncConfiguration, PiiLogFuncError, PiiLogFuncResult, PiiLogRequest, PiiLogResponse};
+use crate::models::{
+    PiiLogFuncConfiguration, PiiLogFuncError, PiiLogFuncResult, PiiLogRequest, PiiLogResponse,
+};
 
 pub async fn post_piilog_func(
     req: HttpRequest,
@@ -62,9 +63,10 @@ pub async fn post_piilog_func(
         .kafka_endpoint
         .split(",")
         .map(|c| c.to_string())
+        .filter(|c| !c.is_empty())
         .collect::<Vec<String>>();
 
-    debug!("Kafka brokers connected {:?}",kafka_brokers);
+    debug!("Kafka brokers connected {:?}", kafka_brokers);
     let mut client = KafkaClient::new_secure(
         kafka_brokers,
         SecurityConfig::new(connector).with_hostname_verification(true),
@@ -72,21 +74,18 @@ pub async fn post_piilog_func(
 
     match client.load_metadata_all() {
         Ok(_) => {
+            let req = vec![
+                ProduceMessage::new("piilog", 0, None, Some("a".as_bytes())),
+                ProduceMessage::new("piilog", 0, None, Some("b".as_bytes())),
+            ];
+            let resp = client.produce_messages(RequiredAcks::One, Duration::from_millis(100), req);
 
-            let req = vec![ProduceMessage::new("piilog", 0, None, Some("a".as_bytes())),
-                           ProduceMessage::new("piilog", 0, None, Some("b".as_bytes()))];
-            let resp = client.produce_messages(RequiredAcks::One,
-                                               Duration::from_millis(100),
-                                               req);
-
-            debug!("Response from Kafka broker: {:#?}",resp);
+            debug!("Response from Kafka broker: {:#?}", resp);
 
             Ok(PiiLogResponse {
                 message: "Sent Completed".to_string(),
             })
         }
-        Err(e) => {
-            Err(PiiLogFuncError::new(e.to_string()))
-        }
+        Err(e) => Err(PiiLogFuncError::new(e.to_string())),
     }
 }
