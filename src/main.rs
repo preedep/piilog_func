@@ -6,7 +6,7 @@ use actix_web::web::Data;
 use azure_core::auth::TokenCredential;
 use logs::debug;
 
-use crate::apis::post_piilog_func;
+use crate::apis::post_pii_log_func;
 use crate::azure_utils::get_certificate_from_key_vault;
 use crate::models::PiiLogFuncConfiguration;
 
@@ -65,7 +65,7 @@ async fn main() -> std::io::Result<()> {
                         // prefixes all resources and routes attached to it...
                         web::scope("/api")
                             // ...so this handles requests for `GET /app/index.html`
-                            .route("/PiiLogHttpTrigger", web::post().to(post_piilog_func)),
+                            .route("/PiiLogHttpTrigger", web::post().to(post_pii_log_func)),
                     )
             })
             .bind(("0.0.0.0", port))?

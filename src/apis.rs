@@ -12,7 +12,7 @@ use crate::models::{
     PiiLogFuncConfiguration, PiiLogFuncError, PiiLogFuncResult, PiiLogRequest, PiiLogResponse,
 };
 
-pub async fn post_piilog_func(
+pub async fn post_pii_log_func(
     req: HttpRequest,
     data_cert: web::Data<KeyVaultGetSecretResponse>,
     data_config: web::Data<PiiLogFuncConfiguration>,
