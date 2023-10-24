@@ -2,10 +2,17 @@ use std::env;
 
 use actix_web::{App, HttpServer, middleware, web};
 use actix_web::middleware::Logger;
+use actix_web::web::Data;
+use azure_core::auth::TokenCredential;
+use azure_identity::DefaultAzureCredential;
+use logs::debug;
+use tokio::sync::Mutex;
 
 use crate::apis::post_piilog_func;
+use crate::azure_utils::get_azure_access_token;
 
 mod apis;
+mod azure_utils;
 
 
 #[actix_web::main]
@@ -17,21 +24,33 @@ async fn main() -> std::io::Result<()> {
         Ok(val) => val.parse().expect("Custom Handler port is not a number!"),
         Err(_) => 8088,
     };
-
-
-    HttpServer::new(|| {
-        App::new()
-            .wrap(middleware::DefaultHeaders::new().add(("PIILog-X-Version", "1.0")))
-            .wrap(Logger::default())
-            .wrap(Logger::new("%a %{User-Agent}i"))
-            .service(
-            // prefixes all resources and routes attached to it...
-            web::scope("/api")
-                // ...so this handles requests for `GET /app/index.html`
-                .route("/PiiLogHttpTrigger", web::post().to(post_piilog_func)),
-        )
-    })
-        .bind(("0.0.0.0", port))?
-        .run()
-        .await
+    //
+    // Get Azure Credentials
+    //
+    let response = get_azure_access_token(None).await;
+    match response {
+        Ok(r) => {
+            debug!("Response token from azure : {:#?}",r);
+            let data = Data::new(Mutex::new(r));
+            HttpServer::new(move || {
+                App::new()
+                    .wrap(middleware::DefaultHeaders::new().add(("PIILog-X-Version", "1.0")))
+                    .wrap(Logger::default())
+                    .wrap(Logger::new("%a %{User-Agent}i"))
+                    .app_data(data.clone())
+                    .service(
+                        // prefixes all resources and routes attached to it...
+                        web::scope("/api")
+                            // ...so this handles requests for `GET /app/index.html`
+                            .route("/PiiLogHttpTrigger", web::post().to(post_piilog_func)),
+                    )
+            })
+                .bind(("0.0.0.0", port))?
+                .run()
+                .await
+        }
+        Err(e) => {
+            panic!("PiiFunc error: {}", e);
+        }
+    }
 }
