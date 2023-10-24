@@ -20,35 +20,59 @@ pub async fn post_piilog_func(
 ) -> PiiLogFuncResult<PiiLogResponse> {
     debug!("Calling post_piilog_func");
 
+    let cert_value = data_cert.value.clone();
+
+    let end_private_key = "\n-----END PRIVATE KEY-----\n";
+    let start_certificate_key = "-----BEGIN CERTIFICATE-----\n";
+
+    let idx_end_private_key = cert_value.clone().find(end_private_key);
+    let private_key = match idx_end_private_key {
+        None => {
+            ""
+        }
+        Some(s) => {
+            let end = s + end_private_key.len();
+            match cert_value.get(0..end) {
+                None => {
+                    ""
+                }
+                Some(c) => {
+                    c
+                }
+            }
+        }
+    };
+    let certificate_key = match cert_value.clone().find(start_certificate_key) {
+        None => {
+            ""
+        }
+        Some(s) => {
+            let start = s;
+            match cert_value.get(start..) {
+                None => {
+                    ""
+                }
+                Some(c) => {
+                    c
+                }
+            }
+        }
+    };
+
+    debug!("Private key \r\n{}",private_key);
+    debug!("Certificate key \r\n{}",certificate_key);
+
     let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
     builder.set_cipher_list("DEFAULT").unwrap();
     builder.set_verify(SslVerifyMode::PEER);
 
-    let cert_bytes = general_purpose::STANDARD
-        .decode(data_cert.value.as_str()).unwrap();
-    println!("{:?}", cert_bytes);
+//    let cert_bytes = general_purpose::STANDARD
+//        .decode(data_cert.value.as_str()).unwrap();
+//    debug!("{:?}", cert_bytes);
 
-    let x509 = X509::from_pem(&cert_bytes).unwrap();
-
+    let x509 = X509::from_pem(certificate_key.as_bytes()).unwrap();
     builder.set_certificate(&x509).unwrap();
     let connector = builder.build();
-
-
-
-    /*
-    let access_token = get_azure_access_token(None).await;
-    match access_token {
-        Ok(a) => {
-            //let _ = req.app_data().insert(&a);
-            Ok(PiiLogResponse {
-                message: "Sent Completed".to_string(),
-            })
-        }
-        Err(e) => {
-            error!("Error posting request to API: {}", e);
-            Err(PiiLogFuncError::new(e.to_string()))
-        }
-    }*/
 
     Ok(PiiLogResponse {
         message: "Sent Completed".to_string(),
