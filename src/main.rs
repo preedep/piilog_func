@@ -26,24 +26,19 @@ async fn main() -> std::io::Result<()> {
     //
     // Get Azure Credentials
     //
-    let response = get_azure_access_token(None).await;
-    match response {
-        Ok(r) => {
-            let res_cert =
-                get_certificate_from_key_vault("nicksecretstoredev001",
-                                               "certkafkadevnick001", &r)
-                    .await.expect("Get Certificate from key vault failed ");
+    let res_cert =
+        get_certificate_from_key_vault("nicksecretstoredev001",
+                                       "certkafkadevnick001")
+            .await;
+    match res_cert {
+        Ok(res_cert) => {
             debug!("Get Key Vault Value : {:#?}",res_cert);
             let data_cert = Data::new(res_cert);
-
-            debug!("Response token from azure : {:#?}", r);
-            let data_access_token = Data::new(r);
             HttpServer::new(move || {
                 App::new()
                     .wrap(middleware::DefaultHeaders::new().add(("PIILog-X-Version", "1.0")))
                     .wrap(Logger::default())
                     .wrap(Logger::new("%a %{User-Agent}i"))
-                    .app_data(data_access_token.clone())
                     .app_data(data_cert.clone())
                     .service(
                         // prefixes all resources and routes attached to it...

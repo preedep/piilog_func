@@ -36,9 +36,7 @@ pub async fn get_azure_access_token(access_token: Option<TokenResponse>) -> azur
         }
     }
 }
-
-pub async fn get_certificate_from_key_vault(account_name: &str, key_name: &str,
-                                            access_token: &TokenResponse) -> azure_core::Result<KeyVaultGetSecretResponse> {
+pub async fn get_certificate_from_key_vault(account_name: &str, key_name: &str) -> azure_core::Result<KeyVaultGetSecretResponse> {
     let creds = Arc::new(
         DefaultAzureCredentialBuilder::new()
             .build(),
