@@ -13,7 +13,7 @@ use crate::models::{
 };
 
 pub async fn post_pii_log_func(
-    req: HttpRequest,
+    _req: HttpRequest,
     data_cert: web::Data<KeyVaultGetSecretResponse>,
     data_config: web::Data<PiiLogFuncConfiguration>,
     payload: web::Json<PiiLogRequest>,
@@ -71,17 +71,16 @@ pub async fn post_pii_log_func(
         kafka_brokers,
         SecurityConfig::new(connector).with_hostname_verification(true),
     );
-
     match client.load_metadata_all() {
         Ok(_) => {
             let req = vec![
                 ProduceMessage::new("piilog", 0, None, Some("a".as_bytes())),
                 ProduceMessage::new("piilog", 0, None, Some("b".as_bytes())),
             ];
-            let resp = client.produce_messages(RequiredAcks::One, Duration::from_millis(100), req);
+            let resp = client.produce_messages(RequiredAcks::One,
+                                               Duration::from_millis(100), req);
 
             debug!("Response from Kafka broker: {:#?}", resp);
-
             Ok(PiiLogResponse {
                 message: "Sent Completed".to_string(),
             })

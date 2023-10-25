@@ -1,18 +1,46 @@
-openssl req -new -newkey rsa:4096 -days 365 -x509 -subj "/CN=Demo-Kafka" -keyout ca-key -out ca-cert -nodes
+#!/bin/bash
 
-keytool -genkey -keyalg RSA -keystore kafka.server.keystore.jks -validity 365 -storepass password -keypass password -dname "CN=preedee.space" -storetype pkcs12
-# verify certificate
-keytool -list -v -keystore kafka.server.keystore.jks
+set -o nounset \
+    -o errexit
 
-keytool -keystore kafka.server.keystore.jks -certreq -file cert-file -storepass password -keypass password
+printf "Deleting previous (if any)..."
+rm -rf secrets
+mkdir secrets
+mkdir -p tmp
+echo " OK!"
+# Generate CA key
+printf "Creating CA..."
+openssl req -new -x509 -keyout tmp/datahub-ca.key -out tmp/datahub-ca.crt -days 365 -subj '/CN=ca.datahub/OU=test/O=datahub/L=paris/C=fr' -passin pass:datahub -passout pass:datahub >/dev/null 2>&1
 
+echo " OK!"
 
-keytool -keystore kafka.server.keystore.jks -alias CARoot -import -file ca-cert -storepass password -keypass password -noprompt
+for i in 'broker' 'producer' 'consumer' 'schema-registry'
+do
+	printf "Creating cert and keystore of $i..."
+	# Create keystores
+	keytool -genkey -noprompt \
+				 -alias $i \
+				 -dname "CN=$i, OU=test, O=datahub, L=paris, C=fr" \
+				 -keystore secrets/$i.keystore.jks \
+				 -keyalg RSA \
+				 -storepass datahub \
+				 -keypass datahub  >/dev/null 2>&1
 
+	# Create CSR, sign the key and import back into keystore
+	keytool -keystore secrets/$i.keystore.jks -alias $i -certreq -file tmp/$i.csr -storepass datahub -keypass datahub >/dev/null 2>&1
 
-keytool -keystore kafka.server.keystore.jks -import -file cert-file-signed -storepass password -keypass password -noprompt
+	openssl x509 -req -CA tmp/datahub-ca.crt -CAkey tmp/datahub-ca.key -in tmp/$i.csr -out tmp/$i-ca-signed.crt -days 365 -CAcreateserial -passin pass:datahub  >/dev/null 2>&1
 
+	keytool -keystore secrets/$i.keystore.jks -alias CARoot -import -noprompt -file tmp/datahub-ca.crt -storepass datahub -keypass datahub >/dev/null 2>&1
 
-keytool -keystore kafka.server.truststore.jks -alias CARoot -import -file ca-cert -storepass password -keypass password -noprompt
+	keytool -keystore secrets/$i.keystore.jks -alias $i -import -file tmp/$i-ca-signed.crt -storepass datahub -keypass datahub >/dev/null 2>&1
 
+	# Create truststore and import the CA cert.
+	keytool -keystore secrets/$i.truststore.jks -alias CARoot -import -noprompt -file tmp/datahub-ca.crt -storepass datahub -keypass datahub >/dev/null 2>&1
+  echo " OK!"
+done
 
+echo "datahub" > secrets/cert_creds
+rm -rf tmp
+
+echo "SUCCEEDED"
