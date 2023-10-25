@@ -27,3 +27,4 @@ local.settings.json
 test
 /.idea/.gitignore
 /.funcignore
+/kafka/kafka-data/data/

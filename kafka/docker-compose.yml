@@ -11,12 +11,13 @@ services:
       ZOOKEEPER_SERVER_ID: 1
       ZOOKEEPER_CLIENT_PORT: ${ZK_PORT}
 
-  kafka-ssl:
+  broker:
     image: confluentinc/cp-kafka:latest
     container_name: ${BROKER_HOST}
     hostname: ${BROKER_HOST}
     ports:
       - "${BROKER_PORT}:${BROKER_PORT}"
+
     depends_on:
       - ${ZK_HOST}
     environment:
@@ -34,6 +35,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     volumes:
       - ./secrets:/etc/kafka/secrets
+      - ./kafka-data/data:/var/lib/kafka/data
 
   schemaregistry:
     image: confluentinc/cp-schema-registry
