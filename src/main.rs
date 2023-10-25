@@ -26,7 +26,7 @@ async fn main() -> std::io::Result<()> {
     let port_key = AZURE_FUNCTION_PORT;
     let port: u16 = match env::var(port_key) {
         Ok(val) => val.parse().expect("Custom Handler port is not a number!"),
-        Err(_) => 8088,
+        Err(_) => 7071,
     };
 
     //  Required system variables

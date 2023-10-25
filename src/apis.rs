@@ -4,7 +4,7 @@ use std::time::Duration;
 use actix_web::{web, HttpRequest};
 use azure_security_keyvault::prelude::KeyVaultGetSecretResponse;
 use kafka::client::{KafkaClient, ProduceMessage, RequiredAcks, SecurityConfig};
-use logs::debug;
+use logs::{debug, error};
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use openssl::x509::X509;
 
@@ -66,7 +66,7 @@ pub async fn post_pii_log_func(
         .filter(|c| !c.is_empty())
         .collect::<Vec<String>>();
 
-    debug!("Kafka brokers connected {:?}", kafka_brokers);
+    debug!("List Kafka brokers : {:?}", kafka_brokers);
     let mut client = KafkaClient::new_secure(
         kafka_brokers,
         SecurityConfig::new(connector).with_hostname_verification(true),
@@ -86,6 +86,9 @@ pub async fn post_pii_log_func(
                 message: "Sent Completed".to_string(),
             })
         }
-        Err(e) => Err(PiiLogFuncError::new(e.to_string())),
+        Err(e) => {
+            error!("Kafka client error : {:?}", e);
+            Err(PiiLogFuncError::new(e.to_string()))
+        },
     }
 }
