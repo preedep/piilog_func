@@ -4,7 +4,7 @@ if [ $? -eq 0 ]; then
 
     export PII_LOG_ENDPOINT="localhost:9092"
     export PII_LOG_KEY_VAULT_ACCOUNT="nicksecretstoredev001"
-    export PII_LOG_KEY_VAULT_KEY_NAME="certkafkadevnick003"
+    export PII_LOG_KEY_VAULT_KEY_NAME="certkafkadevnick004"
     func start --verbose
 else
     echo "Build failed"

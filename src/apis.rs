@@ -1,12 +1,16 @@
 use std::fmt::Display;
 use std::time::Duration;
 
-use actix_web::{web, HttpRequest};
+use actix_web::{HttpRequest, web};
 use azure_security_keyvault::prelude::KeyVaultGetSecretResponse;
+use base64::Engine;
+use base64::engine::general_purpose;
 use kafka::client::{KafkaClient, ProduceMessage, RequiredAcks, SecurityConfig};
 use logs::{debug, error};
+use openssl::error::ErrorStack;
+use openssl::pkcs12::Pkcs12;
+use openssl::pkey::{PKey, Private};
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
-use openssl::x509::X509;
 
 use crate::models::{
     PiiLogFuncConfiguration, PiiLogFuncError, PiiLogFuncResult, PiiLogRequest, PiiLogResponse,
@@ -22,6 +26,7 @@ pub async fn post_pii_log_func(
 
     let cert_value = data_cert.value.clone();
 
+    /*
     let end_private_key = "\n-----END PRIVATE KEY-----\n";
     let start_certificate_key = "-----BEGIN CERTIFICATE-----\n";
 
@@ -48,16 +53,51 @@ pub async fn post_pii_log_func(
     };
     debug!("Private key \r\n{}", private_key);
     debug!("Certificate key \r\n{}", certificate_key);
+    */
 
     let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
     builder.set_cipher_list("DEFAULT").unwrap();
     builder.set_verify(SslVerifyMode::PEER);
-    //    let cert_bytes = general_purpose::STANDARD
-    //        .decode(data_cert.value.as_str()).unwrap();
-    //    debug!("{:?}", cert_bytes);
-    let x509 = X509::from_pem(certificate_key.as_bytes()).unwrap();
-    builder.set_certificate(&x509).unwrap();
+
+    let cert_bytes = general_purpose::STANDARD
+        .decode(data_cert.value.as_str()).unwrap();
+
+    let pkcs12 = Pkcs12::from_der(&cert_bytes).unwrap().parse2("");
+    match pkcs12 {
+        Ok(pk) => {
+            match pk.cert {
+                None => {
+                    error!("Don't have cert");
+                }
+                Some(x509) => {
+                    debug!("Have cert : {:#?}",x509);
+                    builder.set_certificate(&x509).unwrap();
+                }
+            }
+            match pk.pkey {
+                None => {
+                    error!("Don't have private key");
+                }
+                Some(pk) => {
+                    debug!("Private key : {:#?}",pk);
+                    builder.set_private_key(&pk).unwrap();
+                }
+            }
+        }
+        Err(e) => {
+            error!("Parse PKCS12 failed : {}",e);
+        }
+    }
+    let chk_pk = builder.check_private_key();
+    match chk_pk {
+        Ok(_) => {}
+        Err(e) => {
+            error!("Check private key failed : {}",e);
+        }
+    }
+
     let connector = builder.build();
+
     // ~ instantiate KafkaClient with the previous OpenSSL setup
     let kafka_brokers = data_config
         .kafka_endpoint
@@ -88,6 +128,6 @@ pub async fn post_pii_log_func(
         Err(e) => {
             error!("Kafka client error : {:?}", e);
             Err(PiiLogFuncError::new(e.to_string()))
-        },
+        }
     }
 }
