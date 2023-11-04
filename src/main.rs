@@ -49,7 +49,7 @@ async fn main() -> std::io::Result<()> {
         config.key_vault_account.as_str(),
         config.key_vault_key_name.as_str(),
     )
-        .await;
+    .await;
     match res_cert {
         Ok(res_cert) => {
             debug!("Get Key Vault Value : {:#?}", res_cert);
@@ -68,9 +68,9 @@ async fn main() -> std::io::Result<()> {
                             .route("/PiiLogHttpTrigger", web::post().to(post_pii_log_func)),
                     )
             })
-                .bind(("0.0.0.0", port))?
-                .run()
-                .await
+            .bind(("0.0.0.0", port))?
+            .run()
+            .await
         }
         Err(e) => {
             panic!("PiiFunc error: {}", e);
